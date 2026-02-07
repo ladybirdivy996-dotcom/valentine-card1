@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Valentine Invitation</title>
+  <style>
+    :root{
+      --bg1:#fff0f6;
+      --bg2:#ffe3ec;
+      --pink:#ff4d8d;
+      --pink2:#ff7bb3;
+      --ink:#2b2b2b;
+      --card:#ffffffcc;
+      --shadow: 0 18px 60px rgba(0,0,0,.12);
+      --radius: 24px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--ink);
+      min-height:100vh;
+      overflow:hidden;
+      background:
+        radial-gradient(1200px 800px at 20% 10%, var(--bg2), transparent 60%),
+        radial-gradient(1000px 700px at 80% 20%, #ffeef6, transparent 55%),
+        linear-gradient(160deg, var(--bg1), #fff);
+    }
+
+    .wrap{
+      position:relative;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
+      isolation:isolate;
+    }
+
+    .card{
+      width:min(760px, 92vw);
+      background:var(--card);
+      border:1px solid rgba(255,77,141,.18);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 28px 26px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .pill{
+      display:inline-block;
+      padding: 6px 10px;
+      border-radius:999px;
+      background: rgba(255,77,141,.1);
+      color: var(--pink);
+      font-weight:800;
+      font-size:13px;
+      margin-bottom:12px;
+    }
+
+    h1{
+      margin:0 0 10px 0;
+      font-size: clamp(26px, 3.4vw, 40px);
+      letter-spacing:.2px;
+    }
+    p{
+      margin:10px 0 0 0;
+      font-size: clamp(15px, 2vw, 18px);
+      line-height:1.5;
+      opacity:.9;
+    }
+    .hint{
+      margin-top:14px;
+      font-size:14px;
+      opacity:.65;
+    }
+
+    /* IMPORTANT: make row a positioning container */
+    .btnRow{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-top:22px;
+      align-items:center;
+      position:relative;
+      min-height:58px;
+    }
+
+    button, a.btn{
+      appearance:none;
+      border:0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-size:16px;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform .12s ease, filter .12s ease, box-shadow .12s ease, opacity .2s ease, left .12s ease, top .12s ease;
+      user-select:none;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      line-height:1;
+    }
+
+    .yes{
+      background: linear-gradient(135deg, var(--pink), var(--pink2));
+      color:white;
+      box-shadow: 0 12px 30px rgba(255,77,141,.28);
+      position:relative;
+      z-index:2; /* keep Yes always on top */
+    }
+    .yes:hover{ transform: translateY(-1px); filter:saturate(1.05); }
+    .yes:active{ transform: translateY(1px) scale(.99); }
+
+    /* No starts as normal button (won't cover Yes) */
+    .no{
+      background: #ffffff;
+      color: #8a8a8a;
+      border: 1px solid rgba(0,0,0,.12);
+      box-shadow: 0 10px 24px rgba(0,0,0,.06);
+      position:relative;
+      z-index:1;
+      touch-action: manipulation;
+    }
+
+    /* When running, we switch No to absolute */
+    .no.running{
+      position:absolute;
+      z-index:1; /* still below Yes */
+    }
+
+    /* hearts on page 1 */
+    .heart{
+      position:absolute;
+      width:16px; height:16px;
+      transform: rotate(45deg);
+      background: rgba(255,77,141,.22);
+      border-radius: 3px;
+      pointer-events:none;
+      filter: blur(.2px);
+      animation: floatUp linear forwards;
+      z-index:-1;
+    }
+    .heart::before,.heart::after{
+      content:"";
+      position:absolute;
+      width:16px;height:16px;
+      background:inherit;
+      border-radius:50%;
+    }
+    .heart::before{ left:-8px; top:0; }
+    .heart::after{ left:0; top:-8px; }
+    @keyframes floatUp{
+      from{ transform: translateY(40px) rotate(45deg); opacity:0; }
+      20%{ opacity:1; }
+      to{ transform: translateY(-110vh) rotate(45deg); opacity:0; }
+    }
+
+    .page{ display:none; }
+    .page.active{ display:block; }
+
+    /* Basement stage */
+    .basementStage{
+      position:fixed;
+      inset:0;
+      display:none;
+      z-index:-10;
+    }
+    .basementStage.active{ display:block; }
+
+    .basementPhoto{
+      position:absolute; inset:0;
+      background-size: cover;
+      background-position: center;
+      transform: scale(1.03);
+      filter: contrast(1.05) saturate(.9) brightness(.76);
+    }
+    .vignette{
+      position:absolute; inset:0;
+      background: radial-gradient(900px 650px at 50% 40%, transparent 30%, rgba(0,0,0,.62) 80%);
+      opacity:.9;
+      mix-blend-mode:multiply;
+    }
+    .doorShadow{
+      position:absolute; inset:0;
+      background:
+        radial-gradient(360px 520px at 50% 55%, rgba(0,0,0,.62), transparent 65%),
+        linear-gradient(90deg, transparent 42%, rgba(0,0,0,.42) 50%, transparent 58%);
+      opacity:.78;
+      mix-blend-mode:multiply;
+      mask: radial-gradient(480px 640px at 50% 55%, #000 55%, transparent 70%);
+    }
+    .chains{
+      position:absolute; inset:0;
+      opacity:.33;
+      background:
+        repeating-linear-gradient(90deg,
+          transparent 0 90px,
+          rgba(0,0,0,.38) 90px 92px,
+          transparent 92px 160px),
+        repeating-linear-gradient(90deg,
+          transparent 0 120px,
+          rgba(0,0,0,.28) 120px 122px,
+          transparent 122px 210px);
+      mask:
+        radial-gradient(900px 700px at 50% 20%, #000 35%, transparent 70%),
+        linear-gradient(#000, transparent 65%);
+    }
+    .fog{
+      position:absolute; inset:-40px;
+      background:
+        radial-gradient(600px 220px at 20% 30%, rgba(255,255,255,.14), transparent 70%),
+        radial-gradient(680px 260px at 70% 38%, rgba(255,255,255,.12), transparent 72%),
+        radial-gradient(720px 300px at 40% 62%, rgba(255,255,255,.10), transparent 75%),
+        radial-gradient(520px 240px at 80% 70%, rgba(255,255,255,.08), transparent 75%);
+      filter: blur(10px);
+      animation: fogMove 10s ease-in-out infinite alternate;
+      opacity:.75;
+      mix-blend-mode: screen;
+    }
+    @keyframes fogMove{
+      from{ transform: translateX(-18px) translateY(8px) scale(1.02); }
+      to{ transform: translateX(18px) translateY(-8px) scale(1.06); }
+    }
+
+    .basementCard{
+      background: rgba(255, 235, 245, .10);
+      border: 1px solid rgba(255,77,141,.22);
+      color: #f5f5f7;
+    }
+    .basementCard p{ opacity:.95; }
+    .basementCard .pill{
+      background: rgba(255,77,141,.18);
+      color:#ffd1e4;
+    }
+    .escape{
+      background: linear-gradient(135deg, #ff4d8d, #ffa3c9);
+      color:#fff;
+      box-shadow: 0 14px 34px rgba(255,77,141,.22);
+    }
+    .ghostBtn{
+      background: rgba(255,255,255,.10);
+      color: rgba(255,255,255,.90);
+      border: 1px solid rgba(255,255,255,.16);
+    }
+
+    .typewrap{ display:inline-block; white-space:nowrap; }
+    .cursor{
+      display:inline-block;
+      width:10px;
+      margin-left:2px;
+      opacity:.9;
+      animation: blink .9s infinite;
+    }
+    @keyframes blink{ 0%,45%{opacity:1} 46%,100%{opacity:0} }
+    .shake{
+      display:inline-block;
+      animation: jitter .08s infinite alternate;
+      will-change: transform;
+    }
+    @keyframes jitter{
+      from{ transform: translate(0px,0px) rotate(0deg); }
+      to{ transform: translate(1px,-1px) rotate(.2deg); }
+    }
+
+    @media (max-width: 420px){
+      .btnRow{ gap:10px; }
+      button, a.btn{ width:100%; justify-content:center; }
+      /* On very small screens we avoid absolute running to keep UX clean */
+      .no.running{ position:relative; left:auto!important; top:auto!important; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="basementStage" id="basementStage" aria-hidden="true">
+    <div class="basementPhoto" id="basementPhoto"></div>
+    <div class="vignette"></div>
+    <div class="doorShadow"></div>
+    <div class="chains"></div>
+    <div class="fog"></div>
+  </div>
+
+  <div class="wrap">
+    <section class="card page active" id="page1">
+      <span class="pill">Valentine’s Invitation 💌</span>
+      <h1>Dear 臭宝, will you be my Valentine?</h1>
+      <p>you are required to answer this question.</p>
+
+      <div class="btnRow" id="btnRow">
+        <button class="yes" id="yesBtn">Yes 💘</button>
+        <button class="no" id="noBtn">No 🙃</button>
+      </div>
+
+      <div class="hint">P.S. “No” is… suspiciously hard to select.</div>
+    </section>
+
+    <section class="card basementCard page" id="page2">
+      <span class="pill">Excellent choice 😈</span>
+      <h1>I knew you’d say yes.</h1>
+      <p>
+        Welcome to the basement.<br/>
+        <span class="typewrap">
+          <span class="shake" id="escapeLine"></span><span class="cursor">▍</span>
+        </span>
+      </p>
+
+      <div class="btnRow">
+        <button class="escape" id="toPage3">Continue… 🗝️</button>
+        <button class="ghostBtn" id="backBtn">Back ↩︎</button>
+      </div>
+    </section>
+
+    <section class="card page" id="page3" style="background: rgba(255,255,255,.92);">
+      <span class="pill">Escape Room Time 🧩</span>
+      <h1>Alright, 臭宝… prove it.</h1>
+      <p>Click below and let’s play our online escape room together.</p>
+
+      <div class="btnRow">
+        <a class="btn escape" href="https://o-e-r.com/3/MLL3SA#m" target="_blank" rel="noopener">
+          Enter the Escape Room 🚪
+        </a>
+        <button class="ghostBtn" id="backToBasement">Back to basement 😈</button>
+      </div>
+
+      <div class="hint">If it doesn’t open, copy: <strong>o-e-r.com/3/MLL3SA#m</strong></div>
+    </section>
+  </div>
+
+  <script>
+    // Pinterest pin page: https://nz.pinterest.com/pin/26317979069051958/
+    // Direct image:
+    const BASEMENT_IMAGE_URL = "https://i.pinimg.com/736x/e7/f6/b1/e7f6b17d9964bc2593073c6345435737.jpg";
+
+    const page1 = document.getElementById('page1');
+    const page2 = document.getElementById('page2');
+    const page3 = document.getElementById('page3');
+    const basementStage = document.getElementById('basementStage');
+
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn  = document.getElementById('noBtn');
+    const btnRow = document.getElementById('btnRow');
+
+    const toPage3 = document.getElementById('toPage3');
+    const backBtn = document.getElementById('backBtn');
+    const backToBasement = document.getElementById('backToBasement');
+
+    const basementPhoto = document.getElementById('basementPhoto');
+    basementPhoto.style.backgroundImage = `url("${BASEMENT_IMAGE_URL}")`;
+
+    // Hearts
+    let heartTimer = null;
+    function spawnHeart(){
+      const h = document.createElement('div');
+      h.className = 'heart';
+      const size = 10 + Math.random()*18;
+      h.style.width = size + 'px';
+      h.style.height = size + 'px';
+      h.style.left = (Math.random()*100) + 'vw';
+      h.style.bottom = (-20 - Math.random()*40) + 'px';
+      h.style.opacity = 0.25 + Math.random()*0.6;
+      h.style.animationDuration = (4 + Math.random()*4) + 's';
+      h.style.background = `rgba(255,77,141,${0.18 + Math.random()*0.25})`;
+      document.body.appendChild(h);
+      h.addEventListener('animationend', () => h.remove());
+    }
+    function startHearts(){
+      if (heartTimer) return;
+      heartTimer = setInterval(spawnHeart, 280);
+    }
+    function stopHearts(){
+      clearInterval(heartTimer);
+      heartTimer = null;
+    }
+    startHearts();
+
+    // Typewriter + shake
+    const escapeLine = document.getElementById('escapeLine');
+    let typeTimer = null;
+    function typeEscapeLine(text){
+      escapeLine.textContent = "";
+      let i = 0;
+      clearInterval(typeTimer);
+      typeTimer = setInterval(()=>{
+        escapeLine.textContent += text[i] || "";
+        i++;
+        if (i > text.length) clearInterval(typeTimer);
+      }, 45);
+    }
+
+    function showPage(p){
+      [page1,page2,page3].forEach(x=>x.classList.remove('active'));
+      p.classList.add('active');
+
+      if (p === page1){
+        basementStage.classList.remove('active');
+        stopHearts(); startHearts();
+        resetNo();
+      } else {
+        basementStage.classList.add('active');
+        stopHearts();
+      }
+      if (p === page2) typeEscapeLine("You can’t escape.");
+    }
+
+    // Safe run-away: avoid covering Yes
+    function moveNoAwayFromYes(){
+      // Switch to running mode only while moving
+      noBtn.classList.add('running');
+
+      const rowRect = btnRow.getBoundingClientRect();
+      const yesRect = yesBtn.getBoundingClientRect();
+
+      const btnRect = noBtn.getBoundingClientRect();
+      const padding = 10;
+
+      // Coordinates relative to btnRow
+      const rowW = rowRect.width;
+      const rowH = Math.max(rowRect.height, 64);
+
+      // Define a "forbidden zone" around Yes inside btnRow coords
+      const forbidden = {
+        x1: (yesRect.left - rowRect.left) - 14,
+        y1: (yesRect.top  - rowRect.top)  - 14,
+        x2: (yesRect.right- rowRect.left) + 14,
+        y2: (yesRect.bottom-rowRect.top)  + 14
+      };
+
+      // Try up to N times to find a safe spot not overlapping forbidden zone
+      for (let i=0; i<14; i++){
+        const x = padding + Math.random()*(rowW - btnRect.width - padding*2);
+        const y = padding + Math.random()*(rowH - btnRect.height - padding*2);
+
+        const candidate = { x1:x, y1:y, x2:x+btnRect.width, y2:y+btnRect.height };
+        const overlaps =
+          !(candidate.x2 < forbidden.x1 || candidate.x1 > forbidden.x2 ||
+            candidate.y2 < forbidden.y1 || candidate.y1 > forbidden.y2);
+
+        if (!overlaps){
+          noBtn.style.left = x + "px";
+          noBtn.style.top  = y + "px";
+          return;
+        }
+      }
+
+      // fallback: just place it to the far right/bottom within row
+      noBtn.style.left = Math.max(padding, rowW - btnRect.width - padding) + "px";
+      noBtn.style.top  = Math.max(padding, rowH - btnRect.height - padding) + "px";
+    }
+
+    function resetNo(){
+      noBtn.classList.remove('running');
+      noBtn.style.left = "";
+      noBtn.style.top = "";
+    }
+
+    // Make No run on touch/hover/focus/click
+    ['mouseenter','pointerenter','touchstart','focus'].forEach(evt=>{
+      noBtn.addEventListener(evt, (e)=>{
+        e.preventDefault();
+        moveNoAwayFromYes();
+      }, {passive:false});
+    });
+    noBtn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      moveNoAwayFromYes();
+    });
+
+    // Nav
+    yesBtn.addEventListener('click', ()=> showPage(page2));
+    backBtn.addEventListener('click', ()=> showPage(page1));
+    toPage3.addEventListener('click', ()=> showPage(page3));
+    backToBasement.addEventListener('click', ()=> showPage(page2));
+  </script>
+</body>
+</html>
